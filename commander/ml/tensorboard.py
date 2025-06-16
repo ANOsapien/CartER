@@ -4,7 +4,7 @@ Implements extra Tensorboard metrics.
 import logging
 from typing import Any, cast
 
-import gym
+import gymnasium as gym
 import torch as th
 
 from stable_baselines3.common.base_class import BaseAlgorithm

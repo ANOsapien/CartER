@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from typing import cast
-
-from gym.vector import VectorEnv
+import gymnasium as gym
+from gymnasium.vector import VectorEnv
 
 from stable_baselines3.common.vec_env.base_vec_env import VecEnvStepReturn
 

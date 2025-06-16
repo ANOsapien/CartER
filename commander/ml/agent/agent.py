@@ -9,9 +9,9 @@ from time import sleep, time
 from typing import TYPE_CHECKING, Any, Deque, Optional, Type, TypeVar, cast
 
 import numpy as np
-
-from gym import spaces
-from gym.utils import seeding
+import gymnasium as gym
+from gymnasium import spaces
+from gymnasium.utils import seeding
 
 from scipy.integrate import solve_ivp
 
@@ -342,7 +342,10 @@ class SimulatedCartpoleAgent(CartpoleAgent):
     def setup(self) -> None:
         self.derivatives_wrapper = DerivativesWrapper()
 
-    def _reset(self) -> ExternalState:
+    def reset(self, seed: Optional[int] = None) -> tuple[ExternalState, dict]:
+        if seed is not None:
+            self.np_random = np.random.default_rng(seed)
+
         self._state = np.array(
             [
                 self._make_random_symmetrical(
@@ -369,12 +372,20 @@ class SimulatedCartpoleAgent(CartpoleAgent):
                     self.failure_angle_velo[0],
                     self.failure_angle_velo[1],
                 ),
-            ],
+            ]
         )
 
         self.derivatives_wrapper.reset()
 
-        return self.observe()
+        obs = self.observe()
+        info = {}
+        return obs, info
+
+    def _reset(self) -> ExternalState:
+        obs, _ = self.reset()
+        return obs
+
+
 
     def _step(self, action: Action) -> StepInfo:
         """

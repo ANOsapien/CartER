@@ -6,8 +6,8 @@ from abc import ABC, abstractmethod
 from typing import Type, cast
 
 import numpy as np
-
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 
 from commander.constants import FLOAT_TYPE
 from commander.ml.agent.constants import (

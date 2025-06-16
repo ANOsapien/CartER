@@ -5,9 +5,9 @@ from collections.abc import Mapping, Sequence
 from time import time
 from typing import Any, Generic, Optional, Type, TypedDict, cast
 
-import gym
+import gymnasium as gym
 import supersuit as ss
-from gym import spaces
+from gymnasium import spaces
 from pettingzoo.utils.env import ParallelEnv
 
 import deepmerge
@@ -126,28 +126,37 @@ class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
 
         self.observation_freq_ticker = FrequencyTicker()
 
-    def reset(self) -> Mapping[str, ExternalState]:
-        self.episode += 1
-        observations = {}
+    def observation_space(self, agent):
+        """Return observation space for a specific agent"""
+        return self.observation_spaces[agent]
 
-        # This needs to be agent names/ids
-        self.agents = self.possible_agents[:]
-
-        for agent in self.get_agents():
-            observations[agent.name] = agent.reset()
-
-        # ## Environment-level resets
-        self.steps: int = 0
-        self.viewer: Optional[rendering.Viewer] = None
-        self.world_time: float = 0.0
-
-        self.observation_freq_ticker.clear()
-
-        # Return observations from agent reset
-        return observations
-
+    def action_space(self, agent):
+            """Return action space for a specific agent"""
+            return self.action_spaces[agent]
+    
     def observe(self, agent: str) -> ExternalState:
         return self.name_to_agent[agent].observe()
+
+
+    def reset(self, seed=None, options=None):
+        # Don't call super().reset() if it raises NotImplementedError
+        # Instead, implement your own reset logic
+        
+        if seed is not None:
+            self._seed = seed
+            # Set seeds for any random number generators you're using
+        
+        # Reset your environment state here
+        # Initialize observations for all agents
+        observations = {}
+        infos = {}
+        
+        for agent in self.possible_agents:
+            # Initialize observation for each agent
+            observations[agent] = self.observe(agent)
+            infos[agent] = {}
+        
+        return observations, infos
 
     def close(self) -> None:
         raise NotImplementedError("This should be overridden")
@@ -198,6 +207,9 @@ class SimulatedCartpoleEnv(CartpoleEnv[SimulatedCartpoleAgent]):
         self.start_time = start_time
         self.timestep = timestep
         self.world_size = world_size
+        self.render_mode=None
+        self.viewer: Optional[rendering.Viewer] = None
+        self.carts: dict[AgentNameT, rendering.FilledPolygon] = {}
 
         super().__init__(agents=agents)
 
@@ -803,7 +815,7 @@ def make_env(base_env: Type[EnvT], *args: Any, num_frame_stacking: int = 1, **kw
     env = base_env(*args, **kwargs)
 
     env = ss.frame_stack_v1(env, stack_size=num_frame_stacking)
-    env = ss.black_death_v2(env)
+    env = ss.black_death_v3(env)
 
     return env
 
@@ -816,7 +828,7 @@ def make_sb3_env(
     """
     env = make_env(base_env, *args, num_frame_stacking=num_frame_stacking, **kwargs)
 
-    env = ss.pettingzoo_env_to_vec_env_v0(env)
+    env = ss.pettingzoo_env_to_vec_env_v1(env)
 
     # Note: VecMonitor automatically vectorises it for us, I believe.
     # It doesn't seem to behave nicely without this - probably need another wrapper
@@ -827,6 +839,6 @@ def make_sb3_env(
 
 
 def get_sb3_env_root_env(env: VecMonitor) -> EnvT:
-    root_env = cast(Any, env).unwrapped.par_env.unwrapped.env
+    root_env = cast(EnvT, env.venv.par_env.env)
 
     return cast(EnvT, root_env)
