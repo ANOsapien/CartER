@@ -16,7 +16,6 @@ baudrate = 230400
 MAX_COUNT = 10 # Number of points waited to plot a frame 
 ANGLE_ROTATION = 55 # Rotation of the y-label
 
-
 # This is simply a class to manage the cart pendulum system, nothing physically interesting
 class cart_pendulum():
     
@@ -280,127 +279,54 @@ class cart_pendulum():
                             self.reconnect(exp = True)      
     
         
+
+
+
     def pid(self):
         self.module_name = r"pid"
-        print("[INFO] Entered PID mode. Automating swing-up and parameter entry...")
-
-        while self.flag_list["swing_request"]:
-            self.arduino.read_single()
-            msg = self.arduino.receive.rstrip()
-            print("ARDUINO:", msg)
-            if "Do you want to turn up swing up strategy?" in msg:
-                self.arduino.send_message('n\n')  # Skip prompt (Arduino handles swing-up internally)
-                self.flag_list["swing_request"] = False
-                break
-
-        while self.flag_list["pid_input"]:
-            self.arduino.read_all()
-            pid_param = "600,400,2.5,-0.05,0,-0.01\n"  # 🔧 CHANGE THIS LINE for your PID set
-            print("[DEBUG] Sending PID string...")
-            self.arduino.send_message(pid_param)
-            time.sleep(0.1)  # Give Arduino time to read it
-            print("[INFO] Sent PID parameters:", pid_param.strip())
-            time.sleep(0.01)
-            self.arduino.read_all()
-            if self.arduino.receive.rstrip() == "Start inversion control.":
-                self.data.pid_param = self.arduino.message.rstrip()
-                self.flag_list["pid_input"] = False
-
-        # Plotting and logging happens exactly as before
-        if self.arduino.receive.rstrip() == "Kill switch hit.":
-            print("Kill switch hit. Resetting the system...\n")
-            self.reconnect(exp=True)
-        else:
-            if self.flag_list["thread_init"]:
-                reader = threading.Thread(target=self.thread_reader, args=(True, True, False))
-                reader.start()
-                self.flag_list["thread_init"] = False
-
-            if not self.temp_datum.flag_close_event:
-                self.temp_datum.copy(self.data)
-                self.temp_datum.init_plot(self.module_name)
-                self.temp_datum.real_time_plot(self.module_name)
-            else:
-                self.reconnect(exp=True)
-          
-    def main_auto_freq_scan(self,
-                            auto_freq,
-                            auto_amp,
-                            duration,
-                            trans_fade_time = 40,
-                            ):
-        self.module_name = r"auto_freq_scan"
-        self.path = os.getcwd()
         try:
-            self.data.path = self.path + r"\auto_freq_scan"
+            self.data.path = self.path + r"\pid"
             os.makedirs(self.data.path)
         except OSError:
             pass
-        self.arduino.initiate()
-        self.arduino.read_all()
-        time.sleep(1)
-        self.arduino.send_message("0\n") # to reset the arduino board
-        time.sleep(1)
-        self.arduino.read_all()
-        self.arduino.send_message("1\n") # to center the cart as a routine
-        self.arduino.read_single()
-        time.sleep(trans_fade_time)
-        self.arduino.read_all()
-        self.arduino.send_message("4\n") # to turn on the frequency scan mode
-        time.sleep(1)
-        self.arduino.read_single()
-        self.arduino.send_message(str(auto_freq) + "\n") # to send the automated frequency
-        self.data.omega = auto_freq
-        self.temp_datum.omega = auto_freq
-        time.sleep(1)
-        self.arduino.read_all()
-        self.arduino.send_message(str(auto_amp) + "\n") # to send the automated amplitude
-        self.data.amp_0 = auto_amp
-        self.temp_datum.amp_0 = auto_amp
-        self.arduino.read_single()
-        self.auto_start_time = time.time()
-        while(not self.temp_datum.flag_close_event):
-            if(self.arduino.receive.rstrip() == "Kill switch hit."):
-                print("Kill switch hit. Resetting the system...\n")
-                self.reconnect(exp = True, 
-                               send_terminate = True, 
-                               NR_phase_amp = True,
-                               manual_continue = False,
-                               input_spec_info = False,
-                               )
+
+        if self.flag_list["pid_input"]:
+            print("Waiting for Arduino to prompt for PID parameters...")
+            self.arduino.read_all()
+            if "Before press ENTER" in self.arduino.receive:
+                pid_params = self.data.pid_param
+                print(f"Sending PID params: {pid_params}")
+                self.arduino.send_message(pid_params + '\n')
+                time.sleep(0.5)
+                self.arduino.read_all()
+                print(self.arduino.receive)
+                if "Start inversion control." in self.arduino.receive:
+                    print("Arduino acknowledged PID start.")
+                    self.flag_list["pid_input"] = False
+                else:
+                    print("Arduino did not acknowledge correctly.")
             else:
-                
-                if(time.time() - self.auto_start_time > duration):
-                    self.reconnect(exp = True, 
-                                   send_terminate = True, 
-                                   NR_phase_amp = True,
-                                   manual_continue = False,
-                                   input_spec_info = False,
-                                  )
-                    reader.join()
-                    break
-                
-                if(self.flag_list["thread_init"]):
-                    reader = threading.Thread(target = self.thread_reader, 
-                                            args = (True, False, False))
+                print("Unexpected Arduino message:", self.arduino.receive)
+
+        else:
+            if self.arduino.receive.rstrip() == "Kill switch hit.":
+                print("Kill switch hit. Resetting the system...\n")
+                self.reconnect(exp=True)
+            else:
+                if self.flag_list["thread_init"]:
+                    reader = threading.Thread(
+                        target=self.thread_reader,
+                        args=(True, True, False)
+                    )
                     reader.start()
                     self.flag_list["thread_init"] = False
-                
-                if(not self.temp_datum.flag_close_event):
-                    self.temp_datum.copy(self.data, True)
+
+                if not self.temp_datum.flag_close_event:
+                    self.temp_datum.copy(self.data)
                     self.temp_datum.init_plot(self.module_name)
-                    self.temp_datum.real_time_plot(self.module_name, scan = True)
+                    self.temp_datum.real_time_plot(self.module_name)
                 else:
-                    self.reconnect(exp = True, 
-                                   send_terminate = True, 
-                                   NR_phase_amp = True, 
-                                   manual_continue = False,
-                                   input_spec_info = False,
-                                   )
-                    reader.join()
-                    break
-                
-                self.temp_datum.NR_phase_calc(self.data.omega, scan = True, interpolation = True)
+                    self.reconnect(exp=True)
     
     def create_folder(self):
         self.cwd = os.getcwd()
@@ -411,7 +337,7 @@ class cart_pendulum():
             pass
 
     def main(self):
-        input("\nPress ENTER to begin connection...\n")
+        # input("\nPress ENTER to begin connection...\n")
         self.create_folder()
         self.arduino.initiate()
         while(self.arduino.board.is_open):
@@ -458,22 +384,97 @@ class cart_pendulum():
                 self.reset_flag_list()
                 break
 
-if(__name__ == "__main__"):
-    # Initiation parameters
-    fft_lengths = 512 # Good values are 2**n (same as 2^n), possible to choose other numbers
-    sampling_divs = 0.04 # The minimum sampling division set in Arduino is 50 ms
-    wait_to_stables = 1 # NR stage parameter, but also controls the updating rate of phase plot
-        
-    #  Initialisation of the arduino board and the data class
-    arduino_board = arduino(port, baudrate) # initiate the arduino class
-    df = data_frame() # a moment data frame class
-    datum = data(fft_length = fft_lengths, 
-                sampling_div = sampling_divs, 
-                wait_to_stable = wait_to_stables) # a data class for storing data
-    temp_datum = live_data(fft_length = fft_lengths, 
-                sampling_div = sampling_divs, 
-                wait_to_stable = wait_to_stables) # variable for non-blocking plot
+if __name__ == "__main__":
+    import time
+
+    pid_param_list = [
+        "500,350,2.0,-0.05,0,-0.01",
+        "550,375,2.2,-0.06,0,-0.015",
+        "600,400,2.5,-0.05,0,-0.01",
+        "650,425,2.7,-0.04,0,-0.02",
+        "700,450,3.0,-0.03,0,-0.025",
+        "600,300,2.8,-0.05,0,-0.015",
+        "550,350,2.3,-0.06,0,-0.02",
+        "620,370,2.4,-0.045,0,-0.017",
+        "680,390,2.6,-0.035,0,-0.022",
+        "700,410,2.9,-0.025,0,-0.03",
+    ]
+
+    arduino_board = arduino(port, baudrate)
+    df = data_frame()
+    datum = data(fft_length=512, sampling_div=0.04, wait_to_stable=1)
+    temp_datum = live_data(fft_length=512, sampling_div=0.04, wait_to_stable=1)
     cartER = cart_pendulum(arduino_board, datum, temp_datum, df)
 
-    cartER.main()
-    print("\nProgram ends.")
+    cartER.create_folder()
+    arduino_board.initiate()
+    time.sleep(0.5)
+
+    # Step 1: Send '1' to begin centering
+    print("Sending '1' to center...")
+    arduino_board.send_message("1\n")
+    print("Waiting for Arduino to confirm centering...")
+
+    centered = False
+    for _ in range(50):  # Wait up to ~10 seconds
+        arduino_board.read_all()
+        msg = arduino_board.receive.rstrip()
+        if ',' in msg or msg.split(',')[0].isdigit():
+            print(f"Centering done. Message: {msg}")
+            # cartER.center()  # process and store values
+            centered = True
+            break
+        time.sleep(0.2)
+
+    if not centered:
+        print("Centering failed. Exiting.")
+        exit()
+
+    print("Centered! Starting PID trials in 5 seconds...")
+    time.sleep(5)
+
+    for i, params in enumerate(pid_param_list):
+        print(f"\n=== PID Trial {i+1}/10 ===")
+        cartER.reset_flag_list()
+        cartER.flag_list["pid"] = True
+        cartER.data.pid_param = params
+
+        # Step 2: Send '4' to begin PID mode
+        print("Sending '4' to enter PID mode...")
+        arduino_board.send_message("4\n")
+        time.sleep(0.5)
+
+        # Step 3: Check for PID param prompt
+        arduino_board.read_all()
+        msg = arduino_board.receive.rstrip()
+        expected = "Before press ENTER, make sure the pendulum is stable at either the down or upright position!"
+
+        if msg == expected:
+            print("Arduino prompt received. Sending PID parameters...")
+            arduino_board.send_message(params + "\n")
+        else:
+            print("Unexpected Arduino message:", msg)
+            print("Skipping trial.")
+            continue
+
+        # Step 4: Run the trial
+        try:
+            cartER.pid()
+        except KeyboardInterrupt:
+            print("Interrupted by user.")
+            break
+        except Exception as e:
+            print(f"Error during trial {i+1}: {e}")
+            break
+
+        # Step 5: Reset system
+        print("Trial done. Resetting system...")
+        cartER.reconnect(exp=False, swing_request=True, manual_continue=False)
+
+        if not arduino_board.board.is_open:
+            print("Reopening serial port...")
+            arduino_board.initiate()
+
+        time.sleep(1)
+
+    print("\nAll PID trials complete.")
