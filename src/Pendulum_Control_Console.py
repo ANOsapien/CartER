@@ -279,51 +279,6 @@ class cart_pendulum():
                             self.reconnect(exp = True)      
     
         
-    # def pid(self):
-    #     self.module_name = r"pid"
-    #     try:
-    #         self.data.path = self.path + r"\pid"
-    #         os.makedirs(self.data.path)
-    #     except OSError:
-    #         pass
-    #     if(self.flag_list["swing_request"]):
-    #         self.arduino.read_single()
-    #         # self.arduino.send_input_message(save_to_omega = False)
-    #         time.sleep(0.1)
-    #         self.arduino.send_message('n' + '\n')
-    #         self.arduino.read_single()
-    #         if(self.arduino.receive.rstrip() == "Continue with swing-up strategy." or \
-    #             self.arduino.receive.rstrip() == "Continue without swing-up strategy."):
-    #             self.flag_list["swing_request"] = False
-    #     else: 
-    #         if(self.flag_list["pid_input"]):
-    #             self.arduino.read_all()
-    #             self.arduino.read_single()
-    #             self.arduino.send_input_message(save_to_omega = False)
-    #             # Time waited for Arduino to print out the message through serial port
-    #             time.sleep(0.01)
-    #             self.arduino.read_all()
-    #             if(self.arduino.receive.rstrip() == "Start inversion control."):
-    #                 self.data.pid_param = self.arduino.message.rstrip()
-    #                 self.flag_list["pid_input"] = False
-    #         else:
-    #             if(self.arduino.receive.rstrip() == "Kill switch hit."):
-    #                 print("Kill switch hit. Resetting the system...\n")
-    #                 self.reconnect(exp = True)
-    #             else:
-    #                 if(self.flag_list["thread_init"]):
-    #                     reader = threading.Thread(target = self.thread_reader, 
-    #                                             args = (True, True, False))
-    #                     reader.start()
-    #                     self.flag_list["thread_init"] = False
-                    
-    #                 if(not self.temp_datum.flag_close_event):
-    #                     self.temp_datum.copy(self.data)
-    #                     self.temp_datum.init_plot(self.module_name)
-    #                     self.temp_datum.real_time_plot(self.module_name)
-    #                 else:
-    #                     self.reconnect(exp = True)
-
 
 
     def pid(self):
@@ -402,85 +357,6 @@ class cart_pendulum():
 
 
 
-    # def main_auto_freq_scan(self,
-    #                         auto_freq,
-    #                         auto_amp,
-    #                         duration,
-    #                         trans_fade_time = 40,
-    #                         ):
-    #     self.module_name = r"auto_freq_scan"
-    #     self.path = os.getcwd()
-    #     try:
-    #         self.data.path = self.path + r"\auto_freq_scan"
-    #         os.makedirs(self.data.path)
-    #     except OSError:
-    #         pass
-    #     self.arduino.initiate()
-    #     self.arduino.read_all()
-    #     time.sleep(1)
-    #     self.arduino.send_message("0\n") # to reset the arduino board
-    #     time.sleep(1)
-    #     self.arduino.read_all()
-    #     self.arduino.send_message("1\n") # to center the cart as a routine
-    #     self.arduino.read_single()
-    #     time.sleep(trans_fade_time)
-    #     self.arduino.read_all()
-    #     self.arduino.send_message("4\n") # to turn on the frequency scan mode
-    #     time.sleep(1)
-    #     self.arduino.read_single()
-    #     self.arduino.send_message(str(auto_freq) + "\n") # to send the automated frequency
-    #     self.data.omega = auto_freq
-    #     self.temp_datum.omega = auto_freq
-    #     time.sleep(1)
-    #     self.arduino.read_all()
-    #     self.arduino.send_message(str(auto_amp) + "\n") # to send the automated amplitude
-    #     self.data.amp_0 = auto_amp
-    #     self.temp_datum.amp_0 = auto_amp
-    #     self.arduino.read_single()
-    #     self.auto_start_time = time.time()
-    #     while(not self.temp_datum.flag_close_event):
-    #         if(self.arduino.receive.rstrip() == "Kill switch hit."):
-    #             print("Kill switch hit. Resetting the system...\n")
-    #             self.reconnect(exp = True, 
-    #                            send_terminate = True, 
-    #                            NR_phase_amp = True,
-    #                            manual_continue = False,
-    #                            input_spec_info = False,
-    #                            )
-    #         else:
-                
-    #             if(time.time() - self.auto_start_time > duration):
-    #                 self.reconnect(exp = True, 
-    #                                send_terminate = True, 
-    #                                NR_phase_amp = True,
-    #                                manual_continue = False,
-    #                                input_spec_info = False,
-    #                               )
-    #                 reader.join()
-    #                 break
-                
-    #             if(self.flag_list["thread_init"]):
-    #                 reader = threading.Thread(target = self.thread_reader, 
-    #                                         args = (True, False, False))
-    #                 reader.start()
-    #                 self.flag_list["thread_init"] = False
-                
-    #             if(not self.temp_datum.flag_close_event):
-    #                 self.temp_datum.copy(self.data, True)
-    #                 self.temp_datum.init_plot(self.module_name)
-    #                 self.temp_datum.real_time_plot(self.module_name, scan = True)
-    #             else:
-    #                 self.reconnect(exp = True, 
-    #                                send_terminate = True, 
-    #                                NR_phase_amp = True, 
-    #                                manual_continue = False,
-    #                                input_spec_info = False,
-    #                                )
-    #                 reader.join()
-    #                 break
-                
-    #             self.temp_datum.NR_phase_calc(self.data.omega, scan = True, interpolation = True)
-    
     def create_folder(self):
         self.cwd = os.getcwd()
         self.path = self.cwd + r"\cart_pendulum_data"
