@@ -5,30 +5,23 @@ nav:
 
   - Development:
     - 'development/index.md'
-    - 'development/installation.md'
-    - 'development/diagram.md'
-    - 'development/cli.md'
-    - 'development/cad.md'
-    - 'development/serial.md'
-    - 'development/stepper.md'
-    - 'development/protocol.md'
     - 'development/further_work.md'
 
-  - Building:
-    - 'building/index.md'
-    - 'building/bom.md'
-
-  - Usage:
-    - 'usage/index.md'
+  - Assembly:
+    - 'assembly/index.md'
+    - 'assembly/bom.md'
+    - 'assembly/cad.md'
+    - 'assembly/components.md'
 
   - Articles:
     - 'articles/index.md'
-    - 'articles/introducing_carter.md'
     - 'articles/handover_v1.md'
+    - 'articles/presentation.md'
+
 
   - Videos:
     - 'videos/index.md'
-    - 'videos/movements_using_ppo.md'
+    - 'videos/automated_PID_setup.md'
 
 theme:
   name: material

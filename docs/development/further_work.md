@@ -1,11 +1,9 @@
 # Further Work (To-do)
 
-## Increase distance between magnet and ball bearing
+## Data Collection
 
-While the current setup does work fairly reliably, the distance between the
-diametrically magnetised magnet and the ferromagnetic housing of the ball bearing
-on each cart would ideally be increased to allow for higher field strengths at the
-rotary encoder chip.
+Data collection across different PID parameter sets is yet to be completed. Currently, only a limited set of data sets are available. Expanding the dataset will be essential for achieving more accurate K-means clustering and phase-space plots
 
-On start-up the system prints information about the strength of the magnet and currently reports it
-as below the ideal strength.
+## Integrating RL
+
+With the system now fully automated, the next step involves extending the runtime and integrating Q-networks to enable autonomous cart balancing
